@@ -6,6 +6,9 @@ Feature: Local LAN IP vs Public Gateway (NAT Detection)
 
 import socket
 import requests
+import json
+from datetime import datetime
+from pathlib import Path
 
 TIMEOUT = 5  # seconds before timing out an unreachable endpoint
 
@@ -57,6 +60,25 @@ def get_ip_details(ip_address=""):
     return {}
 
 
+def perform_json_export(data, ip_address="127.0.0.1"):
+    
+    timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    safe_ip = ip_address.replace(":", "-")
+    
+    export_dir = Path(__file__).resolve().parent / "exports"
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = export_dir / f"{timestamp}-{safe_ip}-ip-lookup.json"
+    
+    payload = json.dumps(data, indent=4, ensure_ascii=False)
+    with file_path.open("x", encoding="utf-8", newline="\n") as file:
+        file.write(payload)
+        file.write("\n")
+    
+    return file_path
+    
+        
+
 def main():
     print("=" * 50)
     print("        NETWORK TECHNICIAN IP LOOKUP TOOL        ")
@@ -97,6 +119,55 @@ def main():
 
     print("=" * 50)
 
+    # 4. Save Document Finding
+    while True:
+        answer = input("\n[?] Export result into JSON? (Yes/No) [No]\n").strip().casefold()
+
+        if answer in {"yes", "y"}:
+            print("\n[+] Exporting data into JSON...")
+                    
+            lookup_data = {
+                "schema_version": 1,
+                "lookup_time": datetime.now().astimezone().isoformat(timespec="seconds"),
+                "local_network": {
+                    "ip_address": local_ip,
+                },
+                "public_addresses": {
+                    "ipv4": ipv4,
+                    "ipv6": ipv6,
+                },
+                "ip_details": {
+                    "queried_ip": data.get("ip"),
+                    "provider": data.get("org"),
+                    "asn": data.get("asn"),
+                    "location": {
+                        "city": data.get("city"),
+                        "region": data.get("region"),
+                        "country": data.get("country_name"),
+                        "country_code": data.get("country_code"),
+                        "latitude": data.get("latitude"),
+                        "longitude": data.get("longitude"),
+                        "timezone": data.get("timezone"),
+                    },
+                },
+            }
+            
+            try:
+                file_path = perform_json_export(lookup_data, ipv4 or ipv6)
+            except (OSError, TypeError, ValueError) as exc:
+                print(f"[!] JSON export failed: {exc}")
+            else:
+                print(f"[+] JSON saved to {file_path.resolve()}")
+            
+            print(json.dumps(data, indent=4))
+            
+            print("=" * 50)
+            break
+        if answer in {"no", "n", ""}:
+            print("[+] Export skipped.")
+            return
+
+        print("Please enter yes or no.")
 
 if __name__ == "__main__":
     main()
