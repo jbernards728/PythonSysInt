@@ -81,7 +81,7 @@ def perform_json_export(data, ip_address="127.0.0.1"):
 
 def main():
     print("=" * 50)
-    print("        NETWORK TECHNICIAN IP LOOKUP TOOL        ")
+    print("        IPatingin IP Lookup Tool        ")
     print("=" * 50)
 
     # 1. Local Network Inspection
