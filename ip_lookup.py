@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Simple IP Address & Network Information Tool
 Cisco DEVASC Project Activity - Option 2
@@ -9,7 +8,6 @@ import socket
 import requests
 
 TIMEOUT = 5  # seconds before timing out an unreachable endpoint
-
 
 def get_local_ip():
     """
@@ -66,7 +64,7 @@ def main():
 
     # 1. Local Network Inspection
     local_ip = get_local_ip()
-    print(f"\n[+] Local Host Binding:")
+    print("\n[+] Local Host Binding:")
     print(f"  • Private LAN IP: {local_ip} (Internal NAT Interface)")
 
     # 2. Public Dual-Stack Inspection
