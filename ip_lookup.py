@@ -153,7 +153,7 @@ def main():
             }
             
             try:
-                file_path = perform_json_export(lookup_data, ipv4 or ipv6)
+                file_path = perform_json_export(lookup_data, ipv4 or ipv6 or local_ip)
             except (OSError, TypeError, ValueError) as exc:
                 print(f"[!] JSON export failed: {exc}")
             else:
