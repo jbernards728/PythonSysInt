@@ -65,3 +65,14 @@ def test_batch_audit_json_export(tmp_path):
         data = json.load(f)
     assert len(data) == 2
     assert data[1]["usable_hosts"] == 254
+
+
+def test_batch_audit_csv_export(tmp_path):
+    out_base = str(tmp_path / "test_csv_export")
+    created_file = batch_audit_and_export(["192.168.1.1", "10.0.0.0/24"], export_format="csv", filename=out_base)
+
+    assert os.path.exists(created_file)
+    assert created_file.endswith(".csv")
+    with open(created_file, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f.readlines() if line.strip()]
+    assert len(lines) == 3  # header + 2 rows
