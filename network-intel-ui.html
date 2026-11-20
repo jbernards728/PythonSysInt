@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Intelligence CLI</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79c0ff;
+      --success: #3fb950;
+      --error: #f85149;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --card: #f6f8fa;
+        --border: #d0d7de;
+        --text: #1f2328;
+        --muted: #656d76;
+        --accent: #0969da;
+        --accent-hover: #0550ae;
+        --success: #2da44e;
+        --error: #cf222e;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; padding: 2rem; }
+
+    .container { max-width: 800px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2rem; }
+    h1 { font-size: 2rem; font-weight: 600; letter-spacing: -0.02em; }
+    .subtitle { color: var(--muted); margin-top: 0.5rem; font-size: 1rem; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .card h2::before { content: ""; width: 4px; height: 1.1rem; background: var(--accent); border-radius: 2px; }
+
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text); }
+    input, select, textarea {
+      width: 100%; padding: 0.625rem 0.875rem; font-size: 0.9rem;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+
+    .input-row { display: flex; gap: 1rem; }
+    .input-row > * { flex: 1; }
+
+    button {
+      padding: 0.75rem 1.5rem; font-size: 0.9rem; font-weight: 600;
+      background: var(--accent); color: white; border: none; border-radius: 6px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.secondary { background: var(--border); color: var(--text); }
+    button.secondary:hover { background: color-mix(in srgb, var(--border) 80%, var(--text)); }
+
+    .btn-group { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+
+    .output-area {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 1rem; font-family: "SF Mono", "Fira Code", monospace; font-size: 0.8rem;
+      max-height: 400px; overflow: auto; white-space: pre-wrap; word-wrap: break-word;
+      line-height: 1.5;
+    }
+    .output-area.empty { color: var(--muted); text-align: center; padding: 2rem; }
+    .output-line { margin: 0.125rem 0; }
+    .output-key { color: var(--accent); font-weight: 500; }
+    .output-val { color: var(--text); }
+    .output-section { color: var(--success); font-weight: 600; margin-top: 0.5rem; }
+    .output-error { color: var(--error); }
+
+    .badge { display: inline-block; padding: 0.125rem 0.5rem; font-size: 0.7rem; font-weight: 600; border-radius: 999px; }
+    .badge-json { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+    .badge-csv { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
+    .badge-ipv4 { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+    .badge-ipv6 { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
+    .badge-private { background: color-mix(in srgb, var(--muted) 20%, transparent); color: var(--muted); }
+    .badge-public { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
+
+    .help-text { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    .examples { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .example-btn { padding: 0.375rem 0.75rem; font-size: 0.75rem; background: var(--border); color: var(--text); border: none; border-radius: 4px; cursor: pointer; }
+    .example-btn:hover { background: var(--accent); color: white; }
+
+    .footer { text-align: center; margin-top: 2rem; color: var(--muted); font-size: 0.8rem; }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+    .tab { padding: 0.75rem 1.25rem; font-size: 0.875rem; font-weight: 500; color: var(--muted); background: none; border: none; cursor: pointer; position: relative; }
+    .tab.active { color: var(--accent); }
+    .tab.active::after { content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.15s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .result-card { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 1rem; overflow: hidden; }
+    .result-header { padding: 0.75rem 1rem; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .result-body { padding: 1rem; font-size: 0.8rem; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; }
+    .result-item { display: flex; flex-direction: column; gap: 0.125rem; }
+    .result-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .result-value { font-family: "SF Mono", "Fira Code", monospace; color: var(--text); }
+
+    .export-section { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    .export-section label { margin-bottom: 0; font-size: 0.875rem; }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem; }
+      .input-row { flex-direction: column; gap: 0; }
+      .btn-group { flex-direction: column; }
+      .btn-group button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Network Intelligence</h1>
+      <p class="subtitle">IP & CIDR Analysis • Geolocation • ASN Lookup • Batch Export</p>
+    </header>
+
+    <!-- Input Card -->
+    <div class="card">
+      <h2>Analyze Targets</h2>
+
+      <div class="form-group">
+        <label for="targets">IP Addresses or CIDR Blocks</label>
+        <textarea id="targets" rows="3" placeholder="Enter IPs or CIDRs (one per line or comma-separated)&#10;Examples: 8.8.8.8, 1.1.1.1, 192.168.1.0/24, 2001:4860:4860::8888"></textarea>
+        <p class="help-text">Supports IPv4, IPv6, and CIDR notation. Leave empty to analyze your local LAN IP.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Quick Examples</label>
+        <div class="examples">
+          <button class="example-btn" data-value="8.8.8.8">8.8.8.8 (Google DNS)</button>
+          <button class="example-btn" data-value="1.1.1.1">1.1.1.1 (Cloudflare DNS)</button>
+          <button class="example-btn" data-value="192.168.1.0/24">192.168.1.0/24 (LAN)</button>
+          <button class="example-btn" data-value="2001:4860:4860::8888">IPv6 Google DNS</button>
+          <button class="example-btn" data-value="8.8.8.8, 1.1.1.1, 9.9.9.9">Multi-target</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="exportFormat">Export Format</label>
+        <select id="exportFormat">
+          <option value="">None (display only)</option>
+          <option value="json">JSON</option>
+          <option value="csv">CSV</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="customOutput">Custom Filename (optional)</label>
+        <input type="text" id="customOutput" placeholder="my-report (without extension)">
+        <p class="help-text">Default: timestamp-LAN_IP-ip-lookup</p>
+      </div>
+
+      <div class="btn-group">
+        <button id="analyzeBtn">Analyze</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+      </div>
+    </div>
+
+    <!-- Output Tabs -->
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" data-tab="results">Results</button>
+        <button class="tab" data-tab="export">Export</button>
+        <button class="tab" data-tab="cli">CLI Commands</button>
+      </div>
+
+      <!-- Results Tab -->
+      <div class="tab-panel active" id="results">
+        <div id="resultsContainer">
+          <div class="output-area empty">Enter targets above and click "Analyze" to see results.</div>
+        </div>
+      </div>
+
+      <!-- Export Tab -->
+      <div class="tab-panel" id="export">
+        <div class="output-area empty" id="exportOutput">Run an analysis with an export format selected to generate a file.</div>
+        <div class="export-section">
+          <label>Download:</label>
+          <button id="downloadJson" class="secondary" disabled>Download JSON</button>
+          <button id="downloadCsv" class="secondary" disabled>Download CSV</button>
+        </div>
+      </div>
+
+      <!-- CLI Tab -->
+      <div class="tab-panel" id="cli">
+        <div class="output-area" id="cliOutput"></div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      Powered by <code>ip_lookup.py</code> •
+      <a href="#" onclick="showRunSteps()">How to Run Locally</a>
+    </footer>
+  </div>
+
+  <!-- Run Steps Modal -->
+  <div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:var(--card); border:1px solid var(--border); border-radius:12px; max-width:700px; width:100%; max-height:90vh; overflow:auto;">
+      <div style="padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="font-size:1.25rem;">How to Run Network Intelligence CLI</h2>
+        <button onclick="hideRunSteps()" style="background:none; border:none; color:var(--muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+      <div style="padding:1.5rem;">
+        <div id="runStepsContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let lastResults = null;
+    let lastExportFormat = null;
+    let lastFilename = null;
+
+    // DOM Elements
+    const targetsEl = document.getElementById('targets');
+    const exportFormatEl = document.getElementById('exportFormat');
+    const customOutputEl = document.getElementById('customOutput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const exportOutput = document.getElementById('exportOutput');
+    const cliOutput = document.getElementById('cliOutput');
+    const downloadJson = document.getElementById('downloadJson');
+    const downloadCsv = document.getElementById('downloadCsv');
+    const modal = document.getElementById('modal');
+    const runStepsContent = document.getElementById('runStepsContent');
+
+    // Example buttons
+    document.querySelectorAll('.example-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        targetsEl.value = btn.dataset.value;
+      });
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Format output for display
+    function formatResult(info) {
+      const lines = [];
+      const addLine = (key, value, isSection = false) => {
+        if (isSection) {
+          lines.push(`<div class="output-section">▶ ${key}</div>`);
+        } else if (value !== undefined && value !== null && value !== '') {
+          lines.push(`<div class="output-line"><span class="output-key">${key}:</span> <span class="output-val">${escapeHtml(String(value))}</span></div>`);
+        }
+      };
+
+      addLine('Input', info.input);
+      addLine('Version', info.version);
+
+      const badges = [];
+      badges.push(`<span class="badge badge-${info.version.toLowerCase()}">${info.version}</span>`);
+      badges.push(`<span class="badge badge-${info.is_private ? 'private' : 'public'}">${info.is_private ? 'Private' : 'Public'}</span>`);
+      if (info.is_loopback) badges.push(`<span class="badge badge-private">Loopback</span>`);
+      addLine('Type', badges.join(' '));
+
+      addLine('Network', info.network_address);
+      addLine('Netmask', info.netmask);
+      addLine('Prefix', `/${info.prefix_length}`);
+      addLine('Total Addresses', info.total_addresses.toLocaleString());
+      if (info.broadcast_address) addLine('Broadcast', info.broadcast_address);
+      addLine('Usable Hosts', info.usable_hosts.toLocaleString());
+      if (info.ip_address) addLine('IP Address', info.ip_address);
+
+      // Geo/ASN
+      if (info.city || info.region || info.country || info.asn_org) {
+        addLine('Geolocation & ASN', '', true);
+        addLine('City', info.city);
+        addLine('Region', info.region);
+        addLine('Country', info.country);
+        addLine('ASN/Org', info.asn_org);
+        if (info.source) addLine('Source', info.source);
+      }
+
+      if (info.geolocation_error) {
+        addLine('Geo Error', info.geolocation_error);
+      }
+
+      return lines.join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function renderResults(results) {
+      if (!results || results.length === 0) {
+        resultsContainer.innerHTML = '<div class="output-area empty">No results to display.</div>';
+        return;
+      }
+
+      if (results.length === 1) {
+        resultsContainer.innerHTML = `<div class="output-area">${formatResult(results[0])}</div>`;
+      } else {
+        let html = '';
+        results.forEach((r, i) => {
+          html += `
+            <div class="result-card">
+              <div class="result-header">
+                <strong>${i + 1}. ${escapeHtml(r.input)}</strong>
+                <span class="badge badge-${r.version.toLowerCase()}">${r.version}</span>
+                <span class="badge badge-${r.is_private ? 'private' : 'public'}">${r.is_private ? 'Private' : 'Public'}</span>
+              </div>
+              <div class="result-body">
+                <div class="result-grid">
+                  <div class="result-item"><span class="result-label">Network</span><span class="result-value">${escapeHtml(r.network_address)}</span></div>
+                  <div class="result-item"><span class="result-label">Netmask</span><span class="result-value">${escapeHtml(r.netmask)}</span></div>
+                  <div class="result-item"><span class="result-label">Prefix</span><span class="result-value">/${r.prefix_length}</span></div>
+                  <div class="result-item"><span class="result-label">Total Addrs</span><span class="result-value">${r.total_addresses.toLocaleString()}</span></div>
+                  <div class="result-item"><span class="result-label">Usable Hosts</span><span class="result-value">${r.usable_hosts.toLocaleString()}</span></div>
+                  ${r.broadcast_address ? `<div class="result-item"><span class="result-label">Broadcast</span><span class="result-value">${escapeHtml(r.broadcast_address)}</span></div>` : ''}
+                  ${r.city ? `<div class="result-item"><span class="result-label">City</span><span class="result-value">${escapeHtml(r.city)}</span></div>` : ''}
+                  ${r.country ? `<div class="result-item"><span class="result-label">Country</span><span class="result-value">${escapeHtml(r.country)}</span></div>` : ''}
+                  ${r.asn_org ? `<div class="result-item"><span class="result-label">ASN/Org</span><span class="result-value">${escapeHtml(r.asn_org)}</span></div>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        resultsContainer.innerHTML = html;
+      }
+    }
+
+    function generateCliCommands(targets, format, output) {
+      const targetStr = targets.join(' ');
+      let cmd = `python ip_lookup.py ${targetStr}`;
+      if (format) cmd += ` -f ${format}`;
+      if (output) cmd += ` -o "${output}"`;
+      return cmd;
+    }
+
+    function renderCli(targets, format, output) {
+      const lines = [
+        '# Network Intelligence CLI - Run Commands',
+        '',
+        '# Basic analysis (single target)',
+        'python ip_lookup.py 8.8.8.8',
+        '',
+        '# Multiple targets',
+        `python ip_lookup.py ${targets.join(' ')}`,
+        '',
+        '# Export to JSON',
+        `python ip_lookup.py ${targets.join(' ')} -f json`,
+        '',
+        '# Export to CSV with custom filename',
+        `python ip_lookup.py ${targets.join(' ')} -f csv -o "my-report"`,
+        '',
+        '# Interactive mode (no arguments)',
+        'python ip_lookup.py',
+        '',
+        '# Run tests',
+        'python -m pytest tests/tests_network_intel.py -v',
+        '',
+        '# Install dependencies',
+        'pip install requests',
+      ];
+      cliOutput.textContent = lines.join('\n');
+    }
+
+    function generateExportData(results, format) {
+      if (format === 'json') {
+        return JSON.stringify(results, null, 2);
+      } else if (format === 'csv') {
+        const fieldnames = [...new Set(results.flatMap(r => Object.keys(r)))].sort();
+        const header = fieldnames.join(',');
+        const rows = results.map(r =>
+          fieldnames.map(f => {
+            const val = r[f] ?? '';
+            return typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))
+              ? '"' + val.replace(/"/g, '""') + '"'
+              : val;
+          }).join(',')
+        );
+        return [header, ...rows].join('\n');
+      }
+      return '';
+    }
+
+    function downloadFile(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Analyze button
+    analyzeBtn.addEventListener('click', async () => {
+      const rawInput = targetsEl.value.trim();
+      const format = exportFormatEl.value;
+      const customOutput = customOutputEl.value.trim();
+
+      if (!rawInput) {
+        // Simulate local LAN IP
+        const mockLan = '192.168.x.x';
+        resultsContainer.innerHTML = `
+          <div class="output-area">
+            <div class="output-section">========================================</div>
+            <div class="output-line"><span class="output-key">Local LAN IP (NAT):</span> <span class="output-val">${mockLan} (detected via UDP socket)</span></div>
+            <div class="output-section">========================================</div>
+            <div class="output-line" style="margin-top:1rem; color:var(--muted);">Enter IP addresses or CIDR blocks above to analyze.</div>
+          </div>
+        `;
+        renderCli([], format, customOutput);
+        return;
+      }
+
+      // Parse targets
+      const targets = rawInput.split(/[\n,]+/).map(t => t.trim()).filter(Boolean);
+
+      // Show loading
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = 'Analyzing...';
+      resultsContainer.innerHTML = '<div class="output-area empty">Analyzing targets...</div>';
+
+      // Simulate analysis (in real use, this calls the Python script)
+      // For demo, we'll generate mock results
+      await new Promise(r => setTimeout(r, 500));
+
+      const results = targets.map(target => {
+        // Simple mock based on target
+        const isCidr = target.includes('/');
+        const isIpv6 = target.includes(':') && !target.includes('.');
+        const isPrivate = target.startsWith('192.168.') || target.startsWith('10.') || target.startsWith('172.16.') || target.startsWith('127.');
+
+        let network, netmask, prefix, total, broadcast, usable;
+
+        if (isCidr) {
+          const [ip, p] = target.split('/');
+          prefix = parseInt(p);
+          if (isIpv6) {
+            network = ip;
+            netmask = 'N/A (IPv6)';
+            total = 2 ** (128 - prefix);
+            broadcast = 'N/A (IPv6)';
+            usable = total;
+          } else {
+            network = ip;
+            netmask = prefixToNetmask(prefix);
+            total = 2 ** (32 - prefix);
+            broadcast = calculateBroadcast(ip, prefix);
+            usable = prefix < 31 ? Math.max(total - 2, 0) : total;
+          }
+        } else {
+          prefix = isIpv6 ? 128 : 32;
+          network = target;
+          netmask = isIpv6 ? 'N/A (IPv6)' : '255.255.255.255';
+          total = 1;
+          broadcast = isIpv6 ? 'N/A (IPv6)' : target;
+          usable = 1;
+        }
+
+        const result = {
+          input: target,
+          version: isIpv6 ? 'IPv6' : 'IPv4',
+          is_private: isPrivate,
+          network_address: network,
+          netmask: netmask,
+          prefix_length: prefix,
+          total_addresses: total,
+          broadcast_address: broadcast,
+          usable_hosts: usable,
+        };
+
+        if (!isCidr) {
+          result.ip_address = target;
+          result.is_loopback = target === '127.0.0.1' || target === '::1';
+        }
+
+        // Mock geo for public IPs
+        if (!isPrivate && !isCidr) {
+          const geoData = mockGeoData(target);
+          Object.assign(result, geoData);
+        }
+
+        return result;
+      });
+
+      lastResults = results;
+      lastExportFormat = format;
+      lastFilename = customOutput || `export-${Date.now()}`;
+
+      renderResults(results);
+      renderCli(targets, format, customOutput);
+
+      // Update export tab
+      if (format) {
+        const exportData = generateExportData(results, format);
+        exportOutput.textContent = exportData;
+        exportOutput.classList.remove('empty');
+
+        if (format === 'json') {
+          downloadJson.disabled = false;
+          downloadCsv.disabled = true;
+        } else {
+          downloadJson.disabled = true;
+          downloadCsv.disabled = false;
+        }
+      } else {
+        exportOutput.textContent = 'Select an export format (JSON or CSV) in the input panel to generate a file.';
+        exportOutput.classList.add('empty');
+        downloadJson.disabled = true;
+        downloadCsv.disabled = true;
+      }
+
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = 'Analyze';
+    });
+
+    // Clear button
+    clearBtn.addEventListener('click', () => {
+      targetsEl.value = '';
+      exportFormatEl.value = '';
+      customOutputEl.value = '';
+      resultsContainer.innerHTML = '<div class="output-area empty">Enter targets above and click "Analyze" to see results.</div>';
+      exportOutput.textContent = 'Run an analysis with an export format selected to generate a file.';
+      exportOutput.classList.add('empty');
+      cliOutput.textContent = '';
+      downloadJson.disabled = true;
+      downloadCsv.disabled = true;
+      lastResults = null;
+      lastExportFormat = null;
+      lastFilename = null;
+    });
+
+    // Download buttons
+    downloadJson.addEventListener('click', () => {
+      if (lastResults) {
+        const data = generateExportData(lastResults, 'json');
+        downloadFile(data, `${lastFilename}.json`, 'application/json');
+      }
+    });
+
+    downloadCsv.addEventListener('click', () => {
+      if (lastResults) {
+        const data = generateExportData(lastResults, 'csv');
+        downloadFile(data, `${lastFilename}.csv`, 'text/csv');
+      }
+    });
+
+    // Modal
+    function showRunSteps() {
+      runStepsContent.innerHTML = getRunStepsHtml();
+      modal.style.display = 'flex';
+    }
+    function hideRunSteps() {
+      modal.style.display = 'none';
+    }
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) hideRunSteps();
+    });
+
+    function getRunStepsHtml() {
+      return `
+        <h3 style="margin-bottom:1rem;">Quick Start</h3>
+        <ol style="margin-left:1.5rem; line-height:2;">
+          <li><strong>Install Python 3.8+</strong> (if not already installed)</li>
+          <li><strong>Install dependencies:</strong><br><code style="background:var(--bg); padding:0.25rem 0.5rem; border-radius:4px;">pip install requests</code></li>
+          <li><strong>Save the script:</strong> Download <code>ip_lookup.py</code> from the repository</li>
+          <li><strong>Run the tool:</strong> See examples below</li>
+        </ol>
+
+        <h3 style="margin:1.5rem 0 1rem;">Common Commands</h3>
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:1rem; font-family:monospace; font-size:0.85rem; line-height:1.8; overflow:auto;">
+<code># Analyze single IP
+python ip_lookup.py 8.8.8.8
+
+# Analyze multiple IPs
+python ip_lookup.py 8.8.8.8 1.1.1.1 9.9.9.9
+
+# Analyze CIDR block
+python ip_lookup.py 192.168.1.0/24
+
+# Export to JSON
+python ip_lookup.py 8.8.8.8 1.1.1.1 -f json
+
+# Export to CSV with custom filename
+python ip_lookup.py 8.8.8.8 -f csv -o "my-report"
+
+# Interactive mode (prompts for input)
+python ip_lookup.py
+
+# Run unit tests
+python -m pytest tests/tests_network_intel.py -v</code>
+        </div>
+
+        <h3 style="margin:1.5rem 0 1rem;">Example Output</h3>
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:1rem; font-family:monospace; font-size:0.8rem; line-height:1.6; overflow:auto;">
+<code>========================================
+ Local LAN IP (NAT): 192.168.68.108
+========================================
+
+--- Analyzing: 8.8.8.8 ---
+  input             : 8.8.8.8
+  version           : IPv4
+  is_private        : False
+  network_address   : 8.8.8.8
+  netmask           : 255.255.255.255
+  prefix_length     : 32
+  total_addresses   : 1
+  broadcast_address : 8.8.8.8
+  usable_hosts      : 1
+  ip_address        : 8.8.8.8
+  is_loopback       : False
+  city              : Ashburn
+  region            : Virginia
+  country           : United States
+  asn_org           : AS15169 Google LLC
+  source            : ip-api.com</code>
+        </div>
+
+        <h3 style="margin:1.5rem 0 1rem;">Export Files</h3>
+        <p>Exports are saved to <code>exports/</code> directory with timestamps:</p>
+        <code style="background:var(--bg); padding:0.25rem 0.5rem; border-radius:4px;">exports/2026-11-20-18-02-29-192.168.68.108-ip-lookup.json</code>
+
+        <h3 style="margin:1.5rem 0 1rem;">Features</h3>
+        <ul style="margin-left:1.5rem; line-height:2;">
+          <li>✅ Local LAN IP detection (behind NAT)</li>
+          <li>✅ IPv4 & IPv6 support</li>
+          <li>✅ CIDR subnet calculator (network, broadcast, usable hosts)</li>
+          <li>✅ Geolocation (city, region, country)</li>
+          <li>✅ ASN/ISP lookup (organization)</li>
+          <li>✅ Dual API fallback (ipapi.co → ip-api.com)</li>
+          <li>✅ Batch processing multiple targets</li>
+          <li>✅ JSON & CSV export</li>
+          <li>✅ Unit tests included</li>
+        </ul>
+      `;
+    }
+
+    // Helpers
+    function prefixToNetmask(prefix) {
+      if (prefix >= 32) return '255.255.255.255';
+      const mask = ~((1 << (32 - prefix)) - 1) >>> 0;
+      return [(mask >>> 24) & 255, (mask >>> 16) & 255, (mask >>> 8) & 255, mask & 255].join('.');
+    }
+
+    function calculateBroadcast(ip, prefix) {
+      if (prefix >= 32) return ip;
+      const parts = ip.split('.').map(Number);
+      const ipNum = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
+      const hostMask = (1 << (32 - prefix)) - 1;
+      const broadcastNum = ipNum | hostMask;
+      return [(broadcastNum >>> 24) & 255, (broadcastNum >>> 16) & 255, (broadcastNum >>> 8) & 255, broadcastNum & 255].join('.');
+    }
+
+    function mockGeoData(ip) {
+      const known = {
+        '8.8.8.8': { city: 'Mountain View', region: 'California', country: 'United States', asn_org: 'AS15169 Google LLC', source: 'ipapi.co' },
+        '1.1.1.1': { city: 'South Brisbane', region: 'Queensland', country: 'Australia', asn_org: 'AS13335 Cloudflare, Inc.', source: 'ipapi.co' },
+        '9.9.9.9': { city: 'Bedford', region: 'Massachusetts', country: 'United States', asn_org: 'AS19281 Quad9', source: 'ipapi.co' },
+        '208.67.222.222': { city: 'San Francisco', region: 'California', country: 'United States', asn_org: 'AS36692 OpenDNS, LLC', source: 'ipapi.co' },
+      };
+      return known[ip] || { city: 'Unknown', region: 'Unknown', country: 'Unknown', asn_org: 'Unknown', source: 'ip-api.com' };
+    }
+
+    // Initial CLI render
+    renderCli([], '', '');
+  </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+broadcast_address,input,ip_address,is_loopback,is_private,netmask,network_address,prefix_length,total_addresses,usable_hosts,version
+192.168.68.108,192.168.68.108,192.168.68.108,False,True,255.255.255.255,192.168.68.108,32,1,1,IPv4

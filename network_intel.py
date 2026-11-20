@@ -1,7 +1,10 @@
+import argparse
 import csv
 import ipaddress
 import json
+import os
 import socket
+from datetime import datetime
 import requests
 
 
@@ -118,3 +121,81 @@ def batch_audit_and_export(ip_list: list[str], export_format: str = "json", file
         raise ValueError("Unsupported export format. Choose 'json' or 'csv'.")
 
     return output_file
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Network Intelligence CLI: Local LAN IP, CIDR calculator, Geolocation/ASN lookup, and batch export."
+    )
+    parser.add_argument(
+        "targets",
+        nargs="*",
+        help="IPv4/IPv6 addresses or CIDR blocks to analyze (e.g., 8.8.8.8 192.168.1.0/24). Leave empty for interactive menu.",
+    )
+    parser.add_argument(
+        "-f",
+        "--format",
+        choices=["json", "csv"],
+        default=None,
+        help="Export results to a file in the exports/ directory ('json' or 'csv').",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default=None,
+        help="Custom output filename base (without extension).",
+    )
+
+    args = parser.parse_args()
+
+    lan_ip = get_local_lan_ip()
+    print(f"========================================")
+    print(f" Local LAN IP (NAT): {lan_ip}")
+    print(f"========================================")
+
+    targets = args.targets
+    export_fmt = args.format
+
+    if not targets:
+        user_input = input(
+            "\nEnter IP(s) or CIDR block(s) separated by commas (or press Enter to analyze your Local LAN IP): "
+        ).strip()
+        if user_input:
+            targets = [t.strip() for t in user_input.split(",") if t.strip()]
+        else:
+            targets = [lan_ip]
+
+        if not export_fmt:
+            choice = input("Export report? Enter 'json', 'csv', or press Enter to skip: ").strip().lower()
+            if choice in ("json", "csv"):
+                export_fmt = choice
+
+    results = []
+    for target in targets:
+        print(f"\n--- Analyzing: {target} ---")
+        try:
+            info = analyze_ip_or_cidr(target)
+            if not info["is_private"] and "/" not in target:
+                try:
+                    geo = lookup_geolocation_asn(target)
+                    info.update(geo)
+                except requests.RequestException as exc:
+                    info["geolocation_error"] = str(exc)
+            results.append(info)
+            for k, v in info.items():
+                print(f"  {k:18}: {v}")
+        except ValueError as exc:
+            print(f"  [ERROR] {exc}")
+
+    if export_fmt and results:
+        os.makedirs("exports", exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        default_base = os.path.join("exports", f"{timestamp}-{lan_ip}-ip-lookup")
+        out_base = args.output if args.output else default_base
+        valid_targets = [r["input"] for r in results]
+        saved_path = batch_audit_and_export(valid_targets, export_format=export_fmt, filename=out_base)
+        print(f"\n[OK] Report exported to: {saved_path}")
+
+
+if __name__ == "__main__":
+    main()
